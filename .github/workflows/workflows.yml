@@ -1,0 +1,40 @@
+name: Ansible lint execution workflow
+
+on:
+  workflow_call
+
+jobs:
+  ansible-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install ansible-lint
+        run: |
+          pip install "ansible-lint[community,yamllint]"
+
+      - name: Install galaxy roles
+        run: |
+          if [ -f 'roles/requirements.yml' ]; then
+            ansible-galaxy install -r roles/requirements.yml
+          else
+            ansible-galaxy install git+https://github.com/${{ github.repository }},${{ github.sha }}
+          fi
+
+      - name: Execulte ansible-lint
+        run: |
+          ansible-lint
+
+      - name: Show ansible-lint version
+        run: |
+          pip list | grep ansible \
+          | GREP_COLORS='mt=01;34' egrep --color=always '[[:digit:]]' \
+          | GREP_COLORS='mt=01;34' egrep --color=always '\.' \
+          | GREP_COLORS='mt=01;33' egrep --color=always 'ansible.* '
+          ansible-lint --version
